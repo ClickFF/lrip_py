@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 import os
 import argparse
@@ -176,6 +176,7 @@ def main():
         glide_count_file += ".csv"
     if not receptor_path:
         print('ERROR: No receptor pdb file was defined, exit.')
+        sys.exit(1)
     else:
         receptor_path = os.path.abspath(receptor_path)
     if job_type == 'pred' and model_root_path is None:
@@ -209,12 +210,16 @@ def main():
     glide_parm = read_dock_parm(glide_in_file) # read parameters to control GLIDE docking
     
 
+    time_file = open(f'{current_path}/time_record.txt', 'w')
 
     # Setup and run the job
     print('#######################################################\n')
     print('                   IPSF Job start                      \n')
     print('       Start time: %s\n'%datetime.now()                   )
     print('#######################################################\n')
+
+    time_file.write(f'Start time: {datetime.now()}\n')
+
     # Docking and ABCG2 charge assignment are two stages must be performed for all job types.
     if job_type == 'bs' or job_type == 'ite' or job_type == 'train' or job_type == 'pred':
         num_ite = 0
@@ -287,6 +292,7 @@ def main():
                 ])
                 # export_str('%s_pv.maegz'%job_name, glide_out_sum_file, out_property, glide_count_file, ligs['id'], lig_format)
                 save_state(state, restart_out_file)
+                time_file.write(f'End of docking: {datetime.now()}\n')
             else:
                 print('\nERROR: Docking job failed!')
                 sys.exit(1)
@@ -324,7 +330,7 @@ def main():
                 print(f"Ligand {lig} charge assignment {'succeeded' if status else 'failed'}.")
             if abcg_flag:
                 save_state(state, restart_out_file)
-
+            time_file.write(f'End of ABCG2 charge assignment: {datetime.now()}\n')
 
         ### Prep top and crd for md ###
         if restart_point < 4:
@@ -351,6 +357,7 @@ def main():
             #prep_top(lig_list, lig_dir_path_abcg, receptor_path, tleap_template_path)
             if top_flag:
                 save_state(state, restart_out_file)
+            time_file.write(f'End of topology and coordinate files preparation: {datetime.now()}\n')
 
         ### GB min ###
         if restart_point < 5:
@@ -368,6 +375,7 @@ def main():
             submit_jobs(ligs['id'], "%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite), num_parts, gb_min_run_command)
             #!! check md success or not !!#
             save_state(state, restart_out_file)
+            time_file.write(f'End of MD: {datetime.now()}\n')
 
 
         ### Prep ene decomposition ###
@@ -388,6 +396,7 @@ def main():
             for lig in ligs['id']:
                 extract_ie('%s/%s_%s/GB_DEC/%s/ie_ave.dat'%(current_path, job_root, num_ite, lig), comp_info, '%s/%s_%s/GB_DEC/%s/%s.ie'%(current_path, job_root, num_ite, lig, lig))
             save_state(state, restart_out_file)
+            time_file.write(f'End of energy decomposition: {datetime.now()}\n')
 
 
         ### ML scorning function ###
@@ -427,6 +436,7 @@ def main():
                 ml_bs("%s/%s_%s/BS/%s" % (current_path, job_root, num_ite, keyres_file_name), expt_file, ml_model_list, split_ratio, n_bs) 
                 # model_list elements must be integers, split_ratio must be [0.0,1.0], n_bs must be integer
                 save_state(state, restart_out_file)
+                time_file.write(f'End of bootstrap: {datetime.now()}\n')
         elif job_type == 'pred':
             if restart_point <= 7:
                 state=7
@@ -457,7 +467,7 @@ def main():
     print('                   IPSF Job finished                   \n')
     print('      Finish time: %s\n'%datetime.now()                   )
     print('#######################################################\n')
-
+    time_file.write(f'End time: {datetime.now()}\n')
 ##### Start of Main Program #####
 if __name__ == '__main__':
     main()
