@@ -1,10 +1,20 @@
 import pandas as pd
 import numpy as np
 import os
+import sys
 
-def get_keyres(ligs, file_list, output_file):
+def get_keyres(ligs, file_list, output_file, **kwargs):
 
     #file_list=glob.glob('*.csv')
+    pre_kres_file = kwargs.get('pre_kres_file', None)
+
+    if pre_kres_file is not None:
+        if os.path.exists(pre_kres_file):
+            df1 = pd.read_csv(pre_kres_file, index_col = 'molecule')
+            header_list = df1.columns.tolist()
+        else:
+            print('ERROR: %s does not exist.'%pre_kres_file)
+            sys.exit(1)
 
     df_data= pd.DataFrame()
     #df = pd.read_csv('file.txt', sep=' ', header=None)
@@ -38,12 +48,15 @@ def get_keyres(ligs, file_list, output_file):
 
     drop_list = []
 
-    for res in df_data.columns:
-        if min(df_data[res]) > -0.1:
-            drop_list.append(res)
+    if pre_kres_file is None:
+        for res in df_data.columns:
+            if min(df_data[res]) > -0.1:
+                drop_list.append(res)
+    else:
+        for res in df_data.columns:
+            if str(res) not in header_list:
+                drop_list.append(res)
 
     df_keyres=df_data.drop(drop_list, axis = 1)
-
-    #df_keyres
 
     df_keyres.to_csv(output_file, header = True)

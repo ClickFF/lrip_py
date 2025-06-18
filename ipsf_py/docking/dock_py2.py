@@ -29,8 +29,8 @@ dock_params = {
     'FORCEPLANAR': 'True',
     'GRIDFILE': '/data6/tan77/gpcr/docking/D4R_5WIU/glide-grid_1/glide-grid_1.zip',  # Replace with the path to your grid file
     'LIGANDFILE': ligand_file, # Input ligand file
-    'POSES_PER_LIG':   5,
-    'POSTDOCK_NPOSE': 10,
+    'POSES_PER_LIG':   10,
+    'POSTDOCK_NPOSE': 50,
     'PRECISION': 'SP',  # Docking precision: SP or XP
     'REWARD_INTRA_HBONDS': 'True',
 }

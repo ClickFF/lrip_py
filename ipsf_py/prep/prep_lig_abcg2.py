@@ -144,7 +144,7 @@ def assign_abcg2_parallel(lig, lig_format, lig_dir_path, ligs, i, top_pose_for_m
             '-fo', 'mol2',
             '-i', lig_sybyl_name,
             '-o', lig_abcg2_name,
-            '-c', 'bcc',
+            '-c', 'abcg2',
             '-at', 'gaff2',
             '-nc', str(ligs['net_charge'][i]),
             '-rn', 'LIG',

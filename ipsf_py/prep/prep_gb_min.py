@@ -15,9 +15,12 @@ def prep_gb_min(ligs, top_path, input_path, min_end_idx, comp_info, num_mpi):
     mpi = num_mpi
 
 
-    if mpi > 1:
+    if mpi != 'cuda' and mpi > 1:
         mpi_command = 'mpirun -np %s'%mpi + ' ' + 'pmemd.MPI '
         mpi_flag = True
+    elif mpi == 'cuda':
+        mpi_command = 'pmemd.cuda'
+        mpi_flag = False
     else:
         mpi_command = 'pmemd'
         mpi_flag = False

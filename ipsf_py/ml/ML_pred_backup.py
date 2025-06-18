@@ -10,7 +10,7 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import AdaBoostRegressor
 from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 from math import sqrt
 from scipy.stats import pearsonr
 from scipy.stats import kendalltau
@@ -134,8 +134,7 @@ def ml_save(kres_path, expt_path, model_lis):
       a, b = pearsonr(y_train['exp'].values, test_pred.ravel())
       corr.append(a)
       p_value.append(b)
-      corr2.append(r2_score(y_train['exp'].values.ravel(), test_pred.ravel()))
-      #corr2.append(np.square(a))
+      corr2.append(np.square(a))
       temp = list(zip(y_train['exp'].values, test_pred.ravel()))
       pi.append(GET_PI(temp))
       tau_tmp = kendalltau(y_train['exp'].values, test_pred.ravel())
@@ -230,8 +229,7 @@ def ml_bs(kres_path, expt_path, model_lis, split_ratio, n_bs):
          a, b = pearsonr(y_test['exp'].values, test_pred.ravel())
          corr.append(a)
          p_value.append(b)
-         corr2.append(r2_score(y_test['exp'].values.ravel(), test_pred.ravel()))
-         #corr2.append(np.square(a))
+         corr2.append(np.square(a))
          temp = list(zip(y_test['exp'].values, test_pred.ravel()))
          pi.append(GET_PI(temp))
          tau_tmp = kendalltau(y_test['exp'].values, test_pred.ravel())

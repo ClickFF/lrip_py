@@ -136,6 +136,8 @@ def prep_top_parallel(lig, lig_dir_path, receptor_path, tleap_template_path):
             subprocess.run(tleap_command, cwd=temp_dir, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError as e:
             print(f"Error processing ligand {lig}: {e}")
+            print(f"Command output: {e.stdout.decode()}")
+            print(f"Command error: {e.stderr.decode()}")
             return lig, False  # Indicate failure for this ligand
     return lig, True  # Indicate success
 

@@ -46,6 +46,7 @@ def main():
     current_path        = os.getcwd()
     ipsf_py_home        = os.environ.get('IPSF_PY_HOME')
     schrodinger_home    = os.environ.get('SCHRODINGER')
+    cuda_dev            = os.environ.get('CUDA_VISIBLE_DEVICES')
     ligs                = {}
     lig_list            = []
     lig_list_full_path  = []
@@ -150,6 +151,7 @@ def main():
     model_root_path     = config.get('model_root_path', None)
     top_pose_for_ml     = config.get('top_pose_for_ml', 1)
     restart_out_file    = config.get('restart_out_file', '%s/%s.json'%(current_path, job_root))
+    pre_kres_file       = config.get('pre_kres_file', keyres_file_name)
     
 
 
@@ -160,7 +162,10 @@ def main():
     grid_file           = os.path.abspath(grid_file)
     path2lig            = os.path.abspath(path2lig)
     model_root_path     = os.path.abspath(model_root_path)
-    num_mpi             = int(num_mpi)
+    if num_mpi == 'cuda' or num_mpi == 'gpu' or num_mpi == 'GPU' or num_mpi == 'Cuda' or num_mpi == 'CUDA': 
+        num_mpi         = 'cuda'
+    else:
+        num_mpi         = int(num_mpi)
     num_parts           = int(num_parts)
     if restart_flag:
         restart_file    = os.path.abspath(restart_file)
@@ -181,6 +186,15 @@ def main():
         receptor_path = os.path.abspath(receptor_path)
     if job_type == 'pred' and model_root_path is None:
         print('ERROR: No model was given for pred job type, exit.')
+        sys.exit(1)
+    if num_mpi == 'cuda':
+        if not cuda_dev:
+            print('ERROR: CUDA_VISIBLE_DEVICES not set, exit.')
+            sys.exit(1)
+    if pre_kres_file:
+        pre_kres_file = os.path.abspath(pre_kres_file)
+    else:
+        print('ERROR: pre_kres_file not defined, exit.')
         sys.exit(1)
     
 
@@ -269,7 +283,7 @@ def main():
             # glide_docking(job_name, glide_run, glide_parm) # could be used directly but if the schrodinger version is old, some commonly used module 
 
         ### Extract structure from docking output ### 
-        if restart_point <= 2:
+        if restart_point < 2:
             state=2
             if os.path.isdir("%s/%s_%s/DOCKING" % (current_path, job_root, num_ite)):
                 pass
@@ -296,7 +310,7 @@ def main():
             else:
                 print('\nERROR: Docking job failed!')
                 sys.exit(1)
-
+            
 
         ### Assign abcg2 charge ###
         if restart_point < 3:
@@ -358,7 +372,7 @@ def main():
             if top_flag:
                 save_state(state, restart_out_file)
             time_file.write(f'End of topology and coordinate files preparation: {datetime.now()}\n')
-
+        #exit(1)   
         ### GB min ###
         if restart_point < 5:
             state=5
@@ -372,7 +386,11 @@ def main():
             #### working dir: ./ITE_0/GB_MIN ###
             lig_dir_path_abcg = "%s/%s_%s/LIGFILES" % (current_path, job_root, num_ite)
             prep_gb_min(lig_list, lig_dir_path_abcg, gb_min_in_path, min_end_idx, comp_info, num_mpi)
-            submit_jobs(ligs['id'], "%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite), num_parts, gb_min_run_command)
+            #exit(1)
+            if num_mpi != 'cuda':
+                submit_jobs(ligs['id'], "%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite), num_parts, gb_min_run_command)
+            elif num_mpi == 'cuda':
+                submit_jobs(ligs['id'], "%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite), len(ligs['id']), gb_min_run_command)
             #!! check md success or not !!#
             save_state(state, restart_out_file)
             time_file.write(f'End of MD: {datetime.now()}\n')
@@ -397,7 +415,7 @@ def main():
                 extract_ie('%s/%s_%s/GB_DEC/%s/ie_ave.dat'%(current_path, job_root, num_ite, lig), comp_info, '%s/%s_%s/GB_DEC/%s/%s.ie'%(current_path, job_root, num_ite, lig, lig))
             save_state(state, restart_out_file)
             time_file.write(f'End of energy decomposition: {datetime.now()}\n')
-
+        #exit(1)
 
         ### ML scorning function ###
         if job_type == 'train':
@@ -451,7 +469,7 @@ def main():
                 tmp_file_list = []
                 for lig in ligs['id']:
                     tmp_file_list.append("%s/%s_%s/GB_DEC/%s/%s.ie" % (current_path, job_root, num_ite, lig, lig))
-                get_keyres(ligs, tmp_file_list, keyres_file_name)
+                get_keyres(ligs, tmp_file_list, keyres_file_name, pre_kres_file=pre_kres_file)
                 ml_load("%s/%s_%s/PRE/%s" % (current_path, job_root, num_ite, keyres_file_name), ml_model_list, model_root_path, expt_path=expt_file)
                 # expt_path could be the path to experimental value file for validation, and it could also be None or not provided to mute the validation stage.
                 save_state(state, restart_out_file)
@@ -468,6 +486,7 @@ def main():
     print('      Finish time: %s\n'%datetime.now()                   )
     print('#######################################################\n')
     time_file.write(f'End time: {datetime.now()}\n')
+    time_file.close()
 ##### Start of Main Program #####
 if __name__ == '__main__':
     main()
