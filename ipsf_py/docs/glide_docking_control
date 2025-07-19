@@ -1,7 +1,0 @@
-CALC_INPUT_RMS            = True,
-EPIK_PENALTIES            = False,
-FORCEPLANAR               = True,
-POSES_PER_LIG             = 5,
-POSTDOCK_NPOSE            = 10,
-PRECISION                 = SP,
-REWARD_INTRA_HBONDS       = True
