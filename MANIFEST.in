@@ -1,0 +1,5 @@
+include lrip_py/docs/*
+include lrip_py/docs/ene_dec/*
+include lrip_py/docs/md/*
+include lrip_py/docking/export_str.py
+include lrip_py/docking/dock.py

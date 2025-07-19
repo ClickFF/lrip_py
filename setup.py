@@ -1,45 +1,24 @@
-#!/usr/bin/env python3
-
 import os
 import sys
-import importlib
 import shutil
 from pathlib import Path
+from sysconfig import get_paths
+from setuptools import setup, Extension
 
 def set_environment_variable(key, value):
-    """Set an environment variable."""
-    os.environ[key] = value
-    print(f"Environment variable {key} set to {value}.")
+  """Set an environment variable."""
+  os.environ[key] = value
+  print(f"Environment variable {key} set to {value}.")
 
 def check_environment_variable(key):
-    """Check if an environment variable exists and return its value."""
-    global err
-    value = os.environ.get(key)
-    if value:
-        print(f"Environment variable {key} is set to {value}.")
-    else:
-        print(f"\033[31mEnvironment variable {key} is not set.\033[0m")
-        err += 1
-
-def check_required_packages(packages):
-    """Check if required Python packages are installed."""
-    global err
-    missing_packages = []
-    for package in packages:
-        try:
-            importlib.import_module(package)
-            print(f"Package '{package}' is installed.")
-        except ImportError:
-            print(f"\033[31mPackage '{package}' is missing.\033[0m")
-            missing_packages.append(package)
-            err += 1
-
-    if missing_packages:
-        print("\n\033[31mMissing packages:\033[0m")
-        for package in missing_packages:
-            print(f" - {package}")
-        print("Please install them using pip:\n")
-        print(f"pip install {' '.join(missing_packages)}")
+  """Check if an environment variable exists and return its value."""
+  global err
+  value = os.environ.get(key)
+  if value:
+      print(f"Environment variable {key} is set to {value}.")
+  else:
+      print(f"\033[31mEnvironment variable {key} is not set.\033[0m")
+      err += 1
 
 def check_required_executables(executables):
     global err
@@ -59,43 +38,76 @@ def check_required_executables(executables):
             print(f" - {executable}")
         print("\033[31mPlease check the above executables.\033[0m\n")
 
-def make_script_executable():
-    """Ensure the script is executable from the command line."""
-    script_path = Path(__file__).resolve()
-    print(f"\033[32mTo execute this program from anywhere, you can:\033[0m")
-    print(f"1. Add the directory '{script_path.parent}/ipsf_py' to your PATH.")
-    print(f"2. Add the environment veriable export IPSF_PY_HOME={current_path} to your bashrc.")
-    print(f"3. Run run_ipsf.py -h for help message.")
-
-current_path = os.getcwd()
-set_env_var = {'IPSF_PY_HOME' : current_path}
+current_path    = os.getcwd()
+set_env_var     = {'IPSF_PY_HOME' : current_path}
+chk_env_var     = ['SCHRODINGER', 'AMBERHOME']
+chk_executables = ['pmemd', 'sander', 'antechamber', 'parmchk2', 'pmemd.MPI', 'pmemd.cuda']
+include_root    = get_paths()['include']
 err = 0
 
-if __name__ == "__main__":
-    chk_env_var = ['SCHRODINGER', 'AMBERHOME']
-    chk_executables = ['pmemd', 'sander', 'antechamber', 'parmchk2', 'pmemd.MPI']
-    chk_py_pac  = ['concurrent',
-                   'pandas',
-                   'numpy',
-                   'sklearn',
-                   'math',
-                   'scipy',
-                   'pickle',
-                   'datetime']
-    for sev in set_env_var:
-        set_environment_variable(sev, set_env_var[sev])
-    for cev in chk_env_var:
-        check_environment_variable(cev)
-    
-    check_required_executables(chk_executables)
+sr1 = Extension(name='pdbclean', 
+                sources=['lrip_py/csrc/pdbclean.c'],
+                language='c',
+                libraries=['m'],
+                library_dirs=[include_root],
+                )
+sr2 = Extension(name='ie_ave', 
+                sources=['lrip_py/csrc/ie_ave.c'],
+                language='c',
+                libraries=['m'],
+                library_dirs=[include_root],
+                )
 
-    check_required_packages(chk_py_pac)
-    
-    if err == 0:
-        print("\033[32mSetup success!\033[0m")
 
-        make_script_executable()
-    elif err > 0:
-        print("\033[31mSetup failed. Please check above info.\033[0m")
+try:
+  setup(
+      name='lrip-py',
+      version='1.0.1',
+      description='LRIP-SF: An automated workflow for machine learning-molecular mechanics scoring function. Just for internal use, please do not share.',
+      author='Taoyu Niu',
+      author_email='tan77@pitt.edu, niutaoyu@gmail.com',
+      #license='MIT',
+      packages=['lrip_py', 
+                'lrip_py.ml', 
+                'lrip_py.prep', 
+                'lrip_py.utils'],
+      package_dir={'lrip_py'             : 'lrip_py',
+                  'lrip_py.ml'           : 'lrip_py/ml',
+                  'lrip_py.prep'         : 'lrip_py/prep',
+                  'lrip_py.utils'        : 'lrip_py/utils',},
+      include_package_data=True,
+      python_requires='<=3.12',
+      install_requires=[  "platform_system=='Linux'",
+                          'concurrently',
+                          'pandas',
+                          'numpy',
+                          'scikit-learn==1.7.0',
+                          'scipy',
+                          'pickledb',
+                          'datetime',
+                          'psutil==5.9.0',
+                        ],
+      ext_modules=[sr1, sr2],
+      entry_points={
+        'console_scripts': [
+            'pdbclean   = pdbclean:pdbclean',
+            'ie_ave     = ie_ave:ie_ave',
+        ]}
+  )
+except Exception as e:
+  print(f"\033[31mError during setup: {e}\033[0m")
+  err += 1
+  sys.exit(1)
 
-    
+if sys.argv[1] == 'install':
+  for sev in set_env_var:
+    set_environment_variable(sev, set_env_var[sev])
+
+  for cev in chk_env_var:
+    check_environment_variable(cev)
+
+  check_required_executables(chk_executables)
+
+  if err > 0:
+    print("\033[31mSetup failed. Please check above info.\033[0m")
+    sys.exit(1)

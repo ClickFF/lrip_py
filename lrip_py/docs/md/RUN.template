@@ -1,0 +1,8 @@
+#!/bin/bash
+  
+%MPI% -O -i ../input_ipsf/min1.in -o min1.out -p prmtop -c prmcrd -r min1.rst -ref prmcrd
+%MPI% -O -i ../input_ipsf/min2.in -o min2.out -p prmtop -c min1.rst -r min2.rst -ref min1.rst 
+%MPI% -O -i ../input_ipsf/min3.in -o min3.out -p prmtop -c min2.rst -r min3.rst -ref min2.rst
+%MPI% -O -i ../input_ipsf/min4.in -o min4.out -p prmtop -c min3.rst -r min4.rst -ref min3.rst
+%MPI% -O -i ../input_ipsf/min5.in -o min5.out -p prmtop -c min4.rst -r min5.rst
+
