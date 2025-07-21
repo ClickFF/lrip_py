@@ -418,6 +418,8 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
                 os.mkdir("%s/%s_%s/DOCKING" % (current_path, job_root, num_ite))
             os.chdir("%s/%s_%s/DOCKING" % (current_path, job_root, num_ite))
             json_lig_list = json.dumps(ligs['id'])
+            with open(f'{job_name}_lig_list.json', 'w') as f:
+                f.write(json_lig_list)
             # export_str_py = '%s/ipsf_py/docking/export_str.py'%ipsf_py_home
             export_str_py = '{}/docking/export_str.py'.format(_get_resource())
             if os.path.exists('%s_pv.maegz'%job_name):
@@ -429,7 +431,7 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
                     '-o', glide_out_sum_file,
                     '-p', out_property,
                     '-c', glide_count_file,
-                    '-l', json_lig_list,
+                    '-ll', f'{job_name}_lig_list.json',
                     '-f', lig_format
                 ])
                 # export_str('%s_pv.maegz'%job_name, glide_out_sum_file, out_property, glide_count_file, ligs['id'], lig_format)

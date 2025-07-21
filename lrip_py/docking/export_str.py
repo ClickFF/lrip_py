@@ -95,7 +95,8 @@ if __name__ == '__main__':
     if lig_list:
         lig_list = lig_list
     elif lig_list_f:
-        lig_list_tmp = read_lig(lig_list_f)
+        #lig_list_tmp = read_lig(lig_list_f)
+        lig_list_tmp = json.loads(lig_list_f)
         lig_list = json.dumps(lig_list_tmp)
 
     export_str(input_file, out_file, out_property, count_file, lig_list, lig_format)

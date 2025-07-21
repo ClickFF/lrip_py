@@ -98,15 +98,15 @@ except Exception as e:
   err += 1
   sys.exit(1)
 
-if sys.argv[1] == 'install':
-  for sev in set_env_var:
-    set_environment_variable(sev, set_env_var[sev])
 
-  for cev in chk_env_var:
-    check_environment_variable(cev)
+for sev in set_env_var:
+  set_environment_variable(sev, set_env_var[sev])
 
-  check_required_executables(chk_executables)
+for cev in chk_env_var:
+  check_environment_variable(cev)
 
-  if err > 0:
-    print("\033[31mSetup failed. Please check above info.\033[0m")
-    sys.exit(1)
+check_required_executables(chk_executables)
+
+if err > 0:
+  print("\033[31mSetup failed. Please check above info.\033[0m")
+  sys.exit(1)
