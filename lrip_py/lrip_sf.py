@@ -417,7 +417,7 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
             else:
                 os.mkdir("%s/%s_%s/DOCKING" % (current_path, job_root, num_ite))
             os.chdir("%s/%s_%s/DOCKING" % (current_path, job_root, num_ite))
-            json_lig_list = json.dumps(ligs['id'])
+            json_lig_list = json.dumps(ligs)
             with open(f'{job_name}_lig_list.json', 'w') as f:
                 f.write(json_lig_list)
             ll_path = os.path.abspath("%s/%s_%s/DOCKING/%s_lig_list.json" % (current_path, job_root, num_ite, job_name))
