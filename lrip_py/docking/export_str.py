@@ -96,7 +96,7 @@ if __name__ == '__main__':
         lig_list = lig_list
     elif lig_list_f:
         #lig_list_tmp = read_lig(lig_list_f)
-        print(f"Reading ligand list from {lig_list_f}")
+        print("Reading ligand list from: %s"%lig_list_f)
         with open(lig_list_f, 'r') as f:
             lig_list_tmp = json.loads(f)
             lig_list = json.dumps(lig_list_tmp)
