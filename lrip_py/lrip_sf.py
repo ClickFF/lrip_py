@@ -420,7 +420,7 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
             json_lig_list = json.dumps(ligs['id'])
             with open(f'{job_name}_lig_list.json', 'w') as f:
                 f.write(json_lig_list)
-            ll_path = os.path.abspath(f'{job_name}_lig_list.json')
+            ll_path = os.path.abspath("%s/%s_%s/DOCKING/%s_lig_list.json" % (current_path, job_root, num_ite, job_name))
             # export_str_py = '%s/ipsf_py/docking/export_str.py'%ipsf_py_home
             export_str_py = '{}/docking/export_str.py'.format(_get_resource())
             if os.path.exists('%s_pv.maegz'%job_name):

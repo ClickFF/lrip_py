@@ -17,16 +17,15 @@ To run the `lrip_py` package, please install **AMBER molecular dynamics** with v
 
 ## How to install
 
-1. Navigate to the `<package saved directory>`
-2. (Optional) Recommended: Create a conda virtual environment with Python = 3.12.
-    ```bash
-    conda create -n <environment name> python=3.12
-    ```
-3. Execute:
-   ```bash
-   pip install .
-   ```
-4. After finished, try to import the module lrip_py in another directory which is different from the `<package saved directory>`:
+1. Download the code
+```bash
+git clone git@github.com:nnnty/ipsf_py.git
+cd ipsf_py
+conda create -n <replace with your environment name> python=3.12
+pip install .
+```
+
+2. After finished successfully, try to import the module lrip_py in another directory which is different from the ipsf_py/ directory:
     ```python
     import lrip_py
     ```
