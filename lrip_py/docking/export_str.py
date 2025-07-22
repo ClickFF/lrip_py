@@ -12,7 +12,6 @@ def export_str(input_file, out_file, out_property, count_file, lig_list, lig_for
     # Can only export mol2 structure sorted by glide score
 
     dic_title_cont = {}
-    lig_list = json.loads(lig_list)
     # Determine the format of input file
     file_format = fileutils.get_structure_file_format(input_file)
     gscore = open(out_file, 'w')
