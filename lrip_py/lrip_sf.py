@@ -542,10 +542,11 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
             # re-run failed jobs x2
             if len(failed_ligand) > 0:
                 num_ava_cpu = monitor_cpu_usage(usage_threshold)
-                if num_ava_cpu <= 0:
-                    _write_log(log_file, 'Number of availiable CPU cores is %d, not enough for this job, exit.'%num_ava_cpu)
-                    sys.exit(1)
-                num_mpi, num_parts = _calc_mpi(ligs['id'], num_ava_cpu, num_mpi, num_parts, pect_used_cpu, mpi_threads, log_file=log_file)
+                if num_mpi != 'cuda':
+                    if num_ava_cpu <= 0:
+                        _write_log(log_file, 'Number of availiable CPU cores is %d, not enough for this job, exit.'%num_ava_cpu)
+                        sys.exit(1)
+                    num_mpi, num_parts = _calc_mpi(ligs['id'], num_ava_cpu, num_mpi, num_parts, pect_used_cpu, mpi_threads, log_file=log_file)
                 prep_gb_min(failed_ligand, lig_dir_path_abcg, gb_min_in_path, gb_min_in_file_list, comp_info, num_mpi, ncyc=200, log_file=log_file)
                 if num_mpi != 'cuda':
                     submit_jobs(failed_ligand, "%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite), num_parts, gb_min_run_command, log_file=log_file)
@@ -560,10 +561,11 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
             # re-run failed jobs x3
             if len(failed_ligand) > 0:
                 num_ava_cpu = monitor_cpu_usage(usage_threshold)
-                if num_ava_cpu <= 0:
-                    _write_log(log_file, 'Number of availiable CPU cores is %d, not enough for this job, exit.'%num_ava_cpu)
-                    sys.exit(1)
-                num_mpi, num_parts = _calc_mpi(ligs['id'], num_ava_cpu, num_mpi, num_parts, pect_used_cpu, mpi_threads, log_file=log_file)
+                if num_mpi != 'cuda':
+                    if num_ava_cpu <= 0:
+                        _write_log(log_file, 'Number of availiable CPU cores is %d, not enough for this job, exit.'%num_ava_cpu)
+                        sys.exit(1)
+                    num_mpi, num_parts = _calc_mpi(ligs['id'], num_ava_cpu, num_mpi, num_parts, pect_used_cpu, mpi_threads, log_file=log_file)
                 prep_gb_min(failed_ligand, lig_dir_path_abcg, gb_min_in_path, gb_min_in_file_list, comp_info, num_mpi, ncyc=300, log_file=log_file)
                 if num_mpi != 'cuda':
                     submit_jobs(failed_ligand, "%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite), num_parts, gb_min_run_command, log_file=log_file)
