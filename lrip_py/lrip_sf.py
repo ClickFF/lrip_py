@@ -133,10 +133,13 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
     glide_parm          = {}
     restart_point       = -1
     restart_flag        = False
-    state               = -1
     abcg_flag           = True
     top_flag            = True
     failed_ligand       = []
+    restart_dict        = { 'restart_point' : -1,
+                            'num_min'       : 5,
+                            'ligs'          : ligs,}
+    state               = -1
 
     if log_file:
         log_file = os.path.abspath(log_file)
@@ -323,19 +326,6 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
     else:
         _write_log(log_file, 'ERROR: pre_kres_file not defined, exit.')
         sys.exit(1)
-    
-
-    ### Load restart file ###
-    if restart_flag:
-        if os.path.exists(restart_file):
-            with open(restart_file, 'r') as f:
-                restart = json.load(f)
-        else:
-            _write_log(log_file, 'ERROR: restart_file file does not exist, exit.')
-            sys.exit(1)
-        restart_point = restart
-    else:
-        restart_point = -1
 
 
     # Read control
@@ -347,6 +337,21 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
         lig_list.append(str(lig))
         lig_list_full_path.append('%s/%s.%s'%(path2lig, lig, lig_format))
         i += 1
+    
+    ### Load restart file ###
+    if restart_flag:
+        if os.path.exists(restart_file):
+            with open(restart_file, 'r') as f:
+                restart = json.load(f)
+        else:
+            _write_log(log_file, 'ERROR: restart_file file does not exist, exit.')
+            sys.exit(1)
+        restart_point   = restart.get('restart_point', -1)
+        num_min         = restart.get('num_min', 5)
+        ligs            = restart.get('ligs', ligs)
+        
+    else:
+        restart_point = -1
 
     # Calculate optimal number of parallel jobs
     num_ava_cpu = monitor_cpu_usage(usage_threshold)
@@ -373,6 +378,10 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
         ##### Glide docking stage #####
         if restart_point <= 1:
             state=1
+            restart_dict['restart_point'] = state
+            restart_dict['num_min'] = num_min
+            restart_dict['ligs'] = ligs
+
             _write_log(log_file, '\n\n\nGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad')
             _write_log(log_file, '\n\n\nStart ligand docking...')
             if os.path.isdir("%s/%s_%s/DOCKING" % (current_path, job_root, num_ite)):
@@ -404,7 +413,7 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
                 '-p', f'{job_name}_glide_parm.json'
                 #'-p', json_glide_parm
             ])
-            save_state(state, restart_out_file)
+            save_state(restart_dict, restart_out_file)
 
             ### Function for integrated python run ###
             # glide_docking(job_name, glide_run, glide_parm) # could be used directly but if the schrodinger version is old, some commonly used module 
@@ -412,6 +421,10 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
         ### Extract structure from docking output ### 
         if restart_point < 2:
             state=2
+            restart_dict['restart_point'] = state
+            restart_dict['num_min'] = num_min
+            restart_dict['ligs'] = ligs
+
             if os.path.isdir("%s/%s_%s/DOCKING" % (current_path, job_root, num_ite)):
                 pass
             else:
@@ -436,17 +449,21 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
                     '-f', lig_format
                 ])
                 # export_str('%s_pv.maegz'%job_name, glide_out_sum_file, out_property, glide_count_file, ligs['id'], lig_format)
-                save_state(state, restart_out_file)
             else:
                 _write_log(log_file, '\nERROR: Docking job failed!')
                 sys.exit(1)
 
             ligs = update_ligs(ligs, miss_list_file='../DOCKING/{}'.format(miss_list_file), log_file=log_file)
+            save_state(restart_dict, restart_out_file)
 
 
         ### Assign abcg2 charge ###
         if restart_point < 3:
             state=3
+            restart_dict['restart_point'] = state
+            restart_dict['num_min'] = num_min
+            restart_dict['ligs'] = ligs
+            
             _write_log(log_file, '\n\n\nGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad')
             _write_log(log_file, '\n\n\nAssigning ABCG2 charge and preparing MD inputs...')
             if os.path.isdir("%s/%s_%s/LIGFILES" % (current_path, job_root, num_ite)):
@@ -476,15 +493,20 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
                     failed_ligand.append(lig)
                 #print(f"Ligand {lig} charge assignment {'succeeded' if status else 'failed'}.")
             if abcg_flag:
-                save_state(state, restart_out_file)
+                _write_log(log_file, f"\nABCG2 charge assignment finished for all ligands.\n")
             elif len(failed_ligand) > 0 and not status:
                 _write_log(log_file, f"\nWARNING: The following ligands failed to assign ABCG2 charge: {', '.join(failed_ligand)}\n")
                 ligs = update_ligs(ligs, miss_lig_list=failed_ligand)
+            save_state(restart_dict, restart_out_file)
             failed_ligand = []
 
         ### Prep top and crd for md ###
         if restart_point < 4:
             state=4
+            restart_dict['restart_point'] = state
+            restart_dict['num_min'] = num_min
+            restart_dict['ligs'] = ligs
+
             _write_log(log_file, '\n\n\nGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad')
             _write_log(log_file, '\n\n\nPreparing topology and coordinate files...')
             if os.path.isdir("%s/%s_%s/LIGFILES" % (current_path, job_root, num_ite)):
@@ -506,17 +528,21 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
                     failed_ligand.append(lig)
                 #print(f"Ligand {lig} top and crd {'succeeded' if status else 'failed'}.")
             if top_flag:
-                save_state(state, restart_out_file)
                 _write_log(log_file, '\nTopology and coordinate files prepared successfully.\n')
             else:
                 _write_log(log_file, f"WARNING: The following ligands failed to prepare topology and coordinate files: {', '.join(failed_ligand)}\n")
                 ligs = update_ligs(ligs, miss_lig_list=failed_ligand)
+            save_state(restart_dict, restart_out_file)
             failed_ligand = []
 
 
         ### GB min ###
         if restart_point < 5:
             state=5
+            restart_dict['restart_point'] = state
+            restart_dict['num_min'] = num_min
+            restart_dict['ligs'] = ligs
+
             _write_log(log_file, '\n\n\nGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad')
             _write_log(log_file, '\n\n\nMD stage...')
             if os.path.isdir("%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite)):
@@ -577,12 +603,12 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
                                      dir="%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite), \
                                     log_file=log_file)
 
-            ligs = update_ligs(ligs, miss_lig_list=failed_ligand)
-
             if len(failed_ligand) > 0:
                 _write_log(log_file, "WARNING: The following ligands failed to run MD: %s\n" % ', '.join(failed_ligand))
             else:
                 _write_log(log_file, 'MD run successfully.\n')
+
+            ligs = update_ligs(ligs, miss_lig_list=failed_ligand)
 
             if len(ligs['id']) == 0:
                 _write_log(log_file, 'ERROR: No ligands left after MD stage, exit.\n')
@@ -590,12 +616,16 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
 
             failed_ligand = []
 
-            save_state(state, restart_out_file)
+            save_state(restart_dict, restart_out_file)
 
 
         ### Prep ene decomposition ###
         if restart_point < 6:
             state=6
+            restart_dict['restart_point'] = state
+            restart_dict['num_min'] = num_min
+            restart_dict['ligs'] = ligs
+
             _write_log(log_file, '\n\n\nGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad')
             _write_log(log_file, '\n\n\nEnergy decomposition...')
             if os.path.isdir("%s/%s_%s/GB_DEC" % (current_path, job_root, num_ite)):
@@ -638,13 +668,17 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
                 extract_ie('%s/%s_%s/GB_DEC/%s/ie_ave.dat'%(current_path, job_root, num_ite, lig), comp_info, '%s/%s_%s/GB_DEC/%s/%s.ie'%(current_path, job_root, num_ite, lig, lig))
 
             
-            save_state(state, restart_out_file)
+            save_state(restart_dict, restart_out_file)
 
 
         ### ML scorning function ###
         if job_type == 'train':
             if restart_point <= 7:
                 state=7
+                restart_dict['restart_point'] = state
+                restart_dict['num_min'] = num_min
+                restart_dict['ligs'] = ligs
+
                 _write_log(log_file, '\n\n\nGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad')
                 _write_log(log_file, '\n\n\nJob type: Train and save ML models.')
                 if os.path.isdir("%s/%s_%s/TRN" % (current_path, job_root, num_ite)):
@@ -658,11 +692,15 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
                     tmp_file_list.append("%s/%s_%s/GB_DEC/%s/%s.ie" % (current_path, job_root, num_ite, lig, lig))
                 get_keyres(ligs, tmp_file_list, keyres_file_name)
                 ml_save("%s/%s_%s/TRN/%s" % (current_path, job_root, num_ite, keyres_file_name), expt_file, ml_model_list) # model_list elements must be integers
-                save_state(state, restart_out_file)
+                save_state(restart_dict, restart_out_file)
 
         elif job_type == 'bs':
             if restart_point <= 7:
                 state=7
+                restart_dict['restart_point'] = state
+                restart_dict['num_min'] = num_min
+                restart_dict['ligs'] = ligs
+
                 _write_log(log_file, '\n\n\nGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad')
                 _write_log(log_file, '\n\n\nJob type: Models validation using bootstrap.')
                 if os.path.isdir("%s/%s_%s/BS" % (current_path, job_root, num_ite)):
@@ -677,11 +715,15 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
                 get_keyres(ligs, tmp_file_list, keyres_file_name)
                 ml_bs("%s/%s_%s/BS/%s" % (current_path, job_root, num_ite, keyres_file_name), expt_file, ml_model_list, split_ratio, n_bs) 
                 # model_list elements must be integers, split_ratio must be [0.0,1.0], n_bs must be integer
-                save_state(state, restart_out_file)
+                save_state(restart_dict, restart_out_file)
 
         elif job_type == 'pred':
             if restart_point <= 7:
                 state=7
+                restart_dict['restart_point'] = state
+                restart_dict['num_min'] = num_min
+                restart_dict['ligs'] = ligs
+
                 _write_log(log_file, '\n\n\nGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad')
                 _write_log(log_file, '\n\n\nJob type: Load pre_trained ML model for predictions.')
                 if os.path.isdir("%s/%s_%s/PRE" % (current_path, job_root, num_ite)):
@@ -696,13 +738,17 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
                 get_keyres(ligs, tmp_file_list, keyres_file_name, pre_kres_file=pre_kres_file)
                 ml_load("%s/%s_%s/PRE/%s" % (current_path, job_root, num_ite, keyres_file_name), ml_model_list, model_root_path, expt_path=expt_file)
                 # expt_path could be the path to experimental value file for validation, and it could also be None or not provided to mute the validation stage.
-                save_state(state, restart_out_file)
+                save_state(restart_dict, restart_out_file)
         elif job_type == 'ite':
             if restart_point <= 7:
                 state=7
+                restart_dict['restart_point'] = state
+                restart_dict['num_min'] = num_min
+                restart_dict['ligs'] = ligs
+
                 _write_log(log_file, '\n\n\nGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGradGrad')
                 _write_log(log_file, '\n\n\nThis function has not been well established, exit.')
-                save_state(state, restart_out_file)
+                save_state(restart_dict, restart_out_file)
                 sys.exit(1)
     
     _write_log(log_file, '#######################################################\n')
