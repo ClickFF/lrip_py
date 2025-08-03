@@ -138,7 +138,8 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
     failed_ligand       = []
     restart_dict        = { 'restart_point' : -1,
                             'num_min'       : 5,
-                            'ligs'          : ligs,}
+                            'ligs'          : {},
+                            'cpu_usage_det' : 90}
     state               = -1
 
     if log_file:
@@ -349,6 +350,7 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
         restart_point   = restart.get('restart_point', -1)
         num_min         = restart.get('num_min', 5)
         ligs            = restart.get('ligs', ligs)
+        usage_threshold = restart.get('cpu_usage_det', 90)
         
     else:
         restart_point = -1
