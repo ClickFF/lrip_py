@@ -44,17 +44,19 @@ def submit_jobs(dir_list, work_dir, num_parts, run_command, log_file=None):
 def ie_parallel(lig, lig_dir_path, commands):
     import ie_ave
     import tempfile
+    from glob import glob
     current_path = os.getcwd()
     with tempfile.TemporaryDirectory() as temp_dir:
         os.mkdir('minout')
-        file = lig_dir_path + '/' + lig + '/' + 'minout' + '/' + '*'
-
-        shutil.copy(file, './minout')
+        files = glob(lig_dir_path + '/' + lig + '/' + 'minout' + '/' + '*')
+        #file = lig_dir_path + '/' + lig + '/' + 'minout' + '/' + '*'
+        for file in files:
+            shutil.copy(file, './minout')
 
         try:
             # Execute commands
             ie_ave.ie_ave(commands)
-
+            
             # Copy files
             shutil.copy('./ie_ave.dat', f"{current_path}/{lig}/ie_ave.dat")
 
