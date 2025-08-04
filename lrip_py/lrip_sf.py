@@ -179,10 +179,10 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
                             'min5.in.template',
                         ])
     comp_info           = config.get('comp_info', {
-                            'recsrt':1,
-                            'recend':123,
-                            'ligsrt':124,
-                            'ligend':125
+                            'recsrt':-1,
+                            'recend':-1,
+                            'ligsrt':-1,
+                            'ligend':-1
                         }) # must read from control file
     num_mpi             = config.get('num_mpi', 1) # num of threads for minimization
     num_parts           = config.get('num_parts', 9999) # the set of ligands will be devided into <num_parts> groups to run minization.
@@ -297,7 +297,13 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
         sys.exit(1)
     else:
         receptor_path = os.path.abspath(receptor_path)
-        if clean_pdb_f:
+        if  comp_info['recsrt'] != -1 and \
+            comp_info['recend'] != -1 and \
+            comp_info['ligsrt'] != -1 and \
+            comp_info['ligend'] != -1:
+            _write_log(log_file, 'WARNING: No PDB processing will be performed since the residue index information are provided in the config file.')
+            pass
+        elif clean_pdb_f:
             ### clean receptor pdb file ###
             clean_pdb(receptor_path, pdb_clean_command, log_file=log_file)
             re_write_pdb(current_path + '/receptor_clean.pdb', current_path + '/receptor_clean_re.pdb', log_file=log_file)
@@ -312,6 +318,8 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
             comp_info['ligsrt'] = comp_info['recend'] + 1
             comp_info['ligend'] = comp_info['ligsrt'] + 1
 
+    _write_log(log_file, 'PDB file residue index information:\
+            nrecsrt: %d\nrecend: %d\nligsrt: %d\nligend: %d'%(comp_info['recsrt'], comp_info['recend'], comp_info['ligsrt'], comp_info['ligend']))
             
 
 
@@ -645,8 +653,8 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
 
             prep_gb_decomp(ligs, "%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite), gb_ene_dec_in_path, comp_info, num_min) # error: bad atom type: i, solution: change to amber16
             submit_jobs(ligs['id'], "%s/%s_%s/GB_DEC" % (current_path, job_root, num_ite), num_parts, gb_dec_command, log_file=log_file)
-            ## add job check function and re-run function ##
-            submit_jobs(ligs['id'], "%s/%s_%s/GB_DEC" % (current_path, job_root, num_ite), num_parts, ene_dec_command, log_file=log_file)
+
+            # submit_jobs(ligs['id'], "%s/%s_%s/GB_DEC" % (current_path, job_root, num_ite), num_parts, ene_dec_command, log_file=log_file)
 
             with ThreadPoolExecutor() as executor:
                 results = executor.map(
@@ -654,7 +662,7 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
                     ligs["id"], range(len(ligs["id"]))
                 )
             
-            #!! check decomp success or not !!#
+
             failed_ligand = []
             failed_ligand = decomp_check(lig_list=ligs['id'], dir="%s/%s_%s/GB_DEC" % (current_path, job_root, num_ite), log_file=log_file)
             ligs = update_ligs(ligs, miss_lig_list=failed_ligand, log_file=log_file)
