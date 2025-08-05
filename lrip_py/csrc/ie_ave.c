@@ -4,7 +4,7 @@
 # include <stdlib.h>
 # include <string.h>
 # include <Python.h>
-# define MAXCHAR 256
+# define MAXCHAR 9999
 # define SURFTEN 0.0072
 # define debug 0 
 
@@ -217,24 +217,24 @@ fclose(fp);
 
 static PyObject* ie_ave(PyObject *self, PyObject *args) {
 
-PyObject *argList;
-if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &argList)) {
-	return NULL;
-}
-
-int argc = (int)PyList_Size(argList);
-char **argv = (char **)malloc(argc * sizeof(char*));
-if (!argv) return PyErr_NoMemory();
-
-for (int i = 0; i < argc; i++) {
-	PyObject *item = PyList_GetItem(argList, i);
-	if (!PyUnicode_Check(item)) {
-		free(argv);
-		PyErr_SetString(PyExc_TypeError, "All list items must be strings");
+	PyObject *argList;
+	if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &argList)) {
 		return NULL;
 	}
-	argv[i] = PyUnicode_AsUTF8(item);
-}
+
+	int argc = (int)PyList_Size(argList);
+	char **argv = (char **)malloc(argc * sizeof(char*));
+	if (!argv) return PyErr_NoMemory();
+
+	for (int i = 0; i < argc; i++) {
+		PyObject *item = PyList_GetItem(argList, i);
+		if (!PyUnicode_Check(item)) {
+			free(argv);
+			PyErr_SetString(PyExc_TypeError, "All list items must be strings");
+			return NULL;
+		}
+		argv[i] = PyUnicode_AsUTF8(item);
+	}
 
 
 int i,j;
@@ -262,18 +262,24 @@ if (argc != 13) {
 	exit(0);
 }
 for (i = 1; i < argc; i += 2) {
-	if (strcmp(argv[i], "-d") == 0) 
+	if (strcmp(argv[i], "-d") == 0) {
 		strcpy(dirname, argv[i + 1]);
-	if (strcmp(argv[i], "-i") == 0) 
+	}
+	if (strcmp(argv[i], "-i") == 0) { 
 		strcpy(rootname, argv[i + 1]);
-	if (strcmp(argv[i], "-o") == 0) 
+	}
+	if (strcmp(argv[i], "-o") == 0) {
 		strcpy(ofilename, argv[i + 1]);
-	if (strcmp(argv[i], "-s") == 0) 
+	}
+	if (strcmp(argv[i], "-s") == 0) {
 		start=atoi(argv[i + 1]);
-	if (strcmp(argv[i], "-e") == 0) 
+	}
+	if (strcmp(argv[i], "-e") == 0) {
 		end=atoi(argv[i + 1]);
-	if (strcmp(argv[i], "-st") == 0) 
+	}
+	if (strcmp(argv[i], "-st") == 0) {
 		step=atoi(argv[i + 1]);
+	}
 }
 
 strcpy(filename, "./");

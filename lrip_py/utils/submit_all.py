@@ -47,21 +47,40 @@ def ie_parallel(lig, lig_dir_path, commands):
     from glob import glob
     current_path = os.getcwd()
     with tempfile.TemporaryDirectory() as temp_dir:
-        os.mkdir('minout')
-        files = glob(lig_dir_path + '/' + lig + '/' + 'minout' + '/' + '*')
-        #file = lig_dir_path + '/' + lig + '/' + 'minout' + '/' + '*'
-        for file in files:
-            shutil.copy(file, './minout')
+        minout_dir = os.path.join(temp_dir, 'minout')
+        os.mkdir(minout_dir)
+        # files = glob(os.path.join(lig_dir_path, lig, 'minout', '*'))
+        # for file in files:
+        #     try:
+        #         shutil.copy(file, minout_dir)
+        #     except Exception as copy_err:
+        #         print(f"Failed to copy {file} to {minout_dir}: {copy_err}")
+        #         return lig, False
 
         try:
-            # Execute commands
+            # Execute commands in temp_dir
+            commands = [
+                            'ie_ave', 
+                            '-d', '%s/%s/minout' % (current_path, lig),
+                            '-i', 'minout',
+                            '-o', '%s/%s/ie_ave.dat' % (current_path, lig),
+                            '-s', '1',
+                            '-e', '1',
+                            '-st', '1'
+                        ]
             ie_ave.ie_ave(commands)
-            
+            # Check if the output file was created
+            if not os.path.exists(os.path.join(current_path, 'ie_ave.dat')):
+                print(f"Output file 'ie_ave.dat' was not created in {current_path}.")
             # Copy files
-            shutil.copy('./ie_ave.dat', f"{current_path}/{lig}/ie_ave.dat")
+            # shutil.copy('./ie_ave.dat', os.path.join(current_path, lig, 'ie_ave.dat'))
 
         except subprocess.CalledProcessError as e:
+            print(f"Subprocess error: {e}")
             return lig, False  # Indicate failure for this ligand
+        except Exception as e:
+            print(f"General error: {e}")
+            return lig, False
         
     return lig, True  # Indicate success
 

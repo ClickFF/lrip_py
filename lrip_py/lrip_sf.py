@@ -199,7 +199,6 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
                             '-c', 'inpcrd'
                         ])
     ene_dec_command     = config.get('ene_dec_command', [
-                            #ie_ave -d minout -i minout -o ie_ave.dat -s 1 -e 1 -st 1
                             'ie_ave', 
                             '-d', 'minout',
                             '-i', 'minout',
@@ -229,6 +228,7 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
                             '-o', 'receptor_clean.pdb'
                         ])
     clean_pdb_f         = config.get('if_clean_pdb', True)
+    num_min             = config.get('num_min', 5) # number of minimization steps for GB minimization
     
     
 
@@ -654,13 +654,12 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
             prep_gb_decomp(ligs, "%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite), gb_ene_dec_in_path, comp_info, num_min) # error: bad atom type: i, solution: change to amber16
             submit_jobs(ligs['id'], "%s/%s_%s/GB_DEC" % (current_path, job_root, num_ite), num_parts, gb_dec_command, log_file=log_file)
 
-            # submit_jobs(ligs['id'], "%s/%s_%s/GB_DEC" % (current_path, job_root, num_ite), num_parts, ene_dec_command, log_file=log_file)
+            submit_jobs(ligs['id'], "%s/%s_%s/GB_DEC" % (current_path, job_root, num_ite), num_parts, ene_dec_command, log_file=log_file)
 
-            with ThreadPoolExecutor() as executor:
-                results = executor.map(
-                    lambda lig, i: ie_parallel(lig, "%s/%s_%s/GB_DEC" % (current_path, job_root, num_ite), ene_dec_command),
-                    ligs["id"], range(len(ligs["id"]))
-                )
+            # with ThreadPoolExecutor() as executor:
+            #     results = executor.map(
+            #         lambda lig: ie_parallel(lig, "%s/%s_%s/GB_DEC" % (current_path, job_root, num_ite), ene_dec_command),
+            #         ligs["id"])
             
 
             failed_ligand = []

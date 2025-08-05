@@ -19,7 +19,7 @@ def monitor_cpu_usage(usage_threshold=70, log_file=None):
 
     count = 0
     for i, usage in enumerate(cpu_usages):
-        if usage > usage_threshold:
+        if usage < usage_threshold:
             count += 1
         else:
             pass

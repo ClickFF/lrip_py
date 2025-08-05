@@ -738,6 +738,7 @@ static PyObject* pdbclean(PyObject *self, PyObject *args) {
 	}
 
 	for (i = 1; i < argc; i += 2) {
+		printf("Processing argument %d: %s\n", i, argv[i]); // DEBUG
 		if (strcmp(argv[i], "-i") == 0)  
 			strcpy(ifilename, argv[i + 1]);
 		if (strcmp(argv[i], "-o") == 0)  
