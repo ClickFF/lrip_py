@@ -20,10 +20,10 @@ typedef struct {
 }IE;
 
 char line[MAXCHAR];
-char dirname[MAXCHAR];
-char rootname[MAXCHAR];
-char ofilename[MAXCHAR];
-char ifilename[MAXCHAR];
+char dirname[MAXCHAR] = {0};
+char rootname[MAXCHAR] = {0};
+char ofilename[MAXCHAR] = {0};
+char ifilename[MAXCHAR] = {0};
 int i,j;
 FILE *fpin;
 
@@ -261,7 +261,21 @@ if (argc != 13) {
 	printf("             -st step \n");
 	exit(0);
 }
+
+printf("argc = %d\n", argc);
+for (int k = 0; k < argc; k++) {
+    printf("argv[%d]: '%s'\n", k, argv[k] ? argv[k] : "NULL");
+}
+
 for (i = 1; i < argc; i += 2) {
+	if (i+1 >= argc) {
+        fprintf(stderr, "Missing argument value for %s\n", argv[i]);
+        // clean up and return error
+    }
+    if (!argv[i+1]) {
+        fprintf(stderr, "argv[%d+1] is NULL\n", i);
+        // clean up and return error
+    }
 	if (strcmp(argv[i], "-d") == 0) {
 		strcpy(dirname, argv[i + 1]);
 	}

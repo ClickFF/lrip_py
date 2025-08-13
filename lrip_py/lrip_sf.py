@@ -207,7 +207,7 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
                             '-e', '1',
                             '-st', '1'
                         ])
-    keyres_file_name    = config.get('keyres_file_name', 'keyres.csv') 
+    keyres_file_name    = config.get('keyres_file_name', 'keyres.csv') # keyres file name
     ml_model_list       = config.get('ml_model_list', [1, 2, 3, 4, 5, 6, 7, 8]) # must be a list of integers
     glide_in_file       = config.get('glide_in_file', '{}/docs/glide_docking_control'.format(_get_resource()))
     glide_out_sum_file  = config.get('glide_out_sum_file', 'glide_out.csv') # out file is in csv format
@@ -217,7 +217,7 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
     model_root_path     = config.get('model_root_path', current_path)
     top_pose_for_ml     = config.get('top_pose_for_ml', 1)
     restart_out_file    = config.get('restart_out_file', '%s/%s.json'%(current_path, job_root))
-    pre_kres_file       = config.get('pre_kres_file', keyres_file_name)
+    pre_kres_file       = config.get('pre_kres_file', '%s/%s_0/TRN/%s'%(current_path, job_root, keyres_file_name)) # pre_kres_file is the file that contains the keyres from previous run
     usr_def_tleap       = config.get('usr_def_tleap', False)
     pect_used_cpu       = config.get('pect_used_cpu', 0.8)
     usage_threshold     = config.get('cpu_usage_det', 90) # CPU usage threshold to monitor the CPU usage per thread
@@ -368,7 +368,10 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
     if num_ava_cpu <= 0:
         _write_log(log_file, 'Number of availiable CPU cores is %d, not enough for this job, exit.'%num_ava_cpu)
         sys.exit(1)
-    num_mpi, num_parts = _calc_mpi(ligs['id'], num_ava_cpu, num_mpi, num_parts, pect_used_cpu, mpi_threads, log_file=log_file)
+    if num_mpi != 'cuda':
+        mpi, parts = _calc_mpi(ligs['id'], num_ava_cpu, 1, 9999, pect_used_cpu, mpi_threads, log_file=log_file)
+    else:
+        mpi, parts = _calc_mpi(ligs['id'], num_ava_cpu, num_mpi, num_parts, pect_used_cpu, 1, log_file=log_file)
         
     # Read parameters for GLIDE docking
     _write_log(log_file, '\nReading parameters for GLIDE docking...')
@@ -578,14 +581,16 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
             # re-run failed jobs x2
             if len(failed_ligand) > 0:
                 num_ava_cpu = monitor_cpu_usage(usage_threshold)
+                if num_ava_cpu <= 0:
+                    _write_log(log_file, 'Number of availiable CPU cores is %d, not enough for this job, exit.'%num_ava_cpu)
+                    sys.exit(1)
                 if num_mpi != 'cuda':
-                    if num_ava_cpu <= 0:
-                        _write_log(log_file, 'Number of availiable CPU cores is %d, not enough for this job, exit.'%num_ava_cpu)
-                        sys.exit(1)
-                    num_mpi, num_parts = _calc_mpi(ligs['id'], num_ava_cpu, num_mpi, num_parts, pect_used_cpu, mpi_threads, log_file=log_file)
-                prep_gb_min(failed_ligand, lig_dir_path_abcg, gb_min_in_path, gb_min_in_file_list, comp_info, num_mpi, ncyc=200, log_file=log_file)
+                    mpi, parts = _calc_mpi(ligs['id'], num_ava_cpu, 1, 9999, pect_used_cpu, mpi_threads, log_file=log_file)
+                else:
+                    mpi, parts = _calc_mpi(ligs['id'], num_ava_cpu, num_mpi, num_parts, pect_used_cpu, 1, log_file=log_file)
+                prep_gb_min(failed_ligand, lig_dir_path_abcg, gb_min_in_path, gb_min_in_file_list, comp_info, mpi, ncyc=200, log_file=log_file)
                 if num_mpi != 'cuda':
-                    submit_jobs(failed_ligand, "%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite), num_parts, gb_min_run_command, log_file=log_file)
+                    submit_jobs(failed_ligand, "%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite), parts, gb_min_run_command, log_file=log_file)
                 elif num_mpi == 'cuda':
                     submit_jobs(failed_ligand, "%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite), len(failed_ligand), gb_min_run_command, log_file=log_file)
 
@@ -597,15 +602,17 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
             # re-run failed jobs x3
             if len(failed_ligand) > 0:
                 num_ava_cpu = monitor_cpu_usage(usage_threshold)
+                if num_ava_cpu <= 0:
+                    _write_log(log_file, 'Number of availiable CPU cores is %d, not enough for this job, exit.'%num_ava_cpu)
+                    sys.exit(1)
                 if num_mpi != 'cuda':
-                    if num_ava_cpu <= 0:
-                        _write_log(log_file, 'Number of availiable CPU cores is %d, not enough for this job, exit.'%num_ava_cpu)
-                        sys.exit(1)
-                    num_mpi, num_parts = _calc_mpi(ligs['id'], num_ava_cpu, num_mpi, num_parts, pect_used_cpu, mpi_threads, log_file=log_file)
-                prep_gb_min(failed_ligand, lig_dir_path_abcg, gb_min_in_path, gb_min_in_file_list, comp_info, num_mpi, ncyc=300, log_file=log_file)
-                if num_mpi != 'cuda':
-                    submit_jobs(failed_ligand, "%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite), num_parts, gb_min_run_command, log_file=log_file)
-                elif num_mpi == 'cuda':
+                    mpi, parts = _calc_mpi(ligs['id'], num_ava_cpu, 1, 9999, pect_used_cpu, mpi_threads, log_file=log_file)
+                else:
+                    mpi, parts = _calc_mpi(ligs['id'], num_ava_cpu, num_mpi, num_parts, pect_used_cpu, 1, log_file=log_file)
+                prep_gb_min(failed_ligand, lig_dir_path_abcg, gb_min_in_path, gb_min_in_file_list, comp_info, mpi, ncyc=300, log_file=log_file)
+                if mpi != 'cuda':
+                    submit_jobs(failed_ligand, "%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite), parts, gb_min_run_command, log_file=log_file)
+                elif mpi == 'cuda':
                     submit_jobs(failed_ligand, "%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite), len(failed_ligand), gb_min_run_command, log_file=log_file)
 
             failed_ligand = []
@@ -649,12 +656,12 @@ def run_lrip(list_file: str, config_file: str, path2lig: str, grid_file: str, jo
             if num_ava_cpu <= 0:
                 _write_log(log_file, 'Number of availiable CPU cores is %d, not enough for this job, exit.'%num_ava_cpu)
                 sys.exit(1)
-            num_mpi, num_parts = _calc_mpi(ligs['id'], num_ava_cpu, num_mpi, num_parts, pect_used_cpu, mpi_threads, log_file=log_file)
+            mpi, parts = _calc_mpi(ligs['id'], num_ava_cpu, 1, 9999, pect_used_cpu, 1, log_file=log_file)
 
             prep_gb_decomp(ligs, "%s/%s_%s/GB_MIN" % (current_path, job_root, num_ite), gb_ene_dec_in_path, comp_info, num_min) # error: bad atom type: i, solution: change to amber16
-            submit_jobs(ligs['id'], "%s/%s_%s/GB_DEC" % (current_path, job_root, num_ite), num_parts, gb_dec_command, log_file=log_file)
+            submit_jobs(ligs['id'], "%s/%s_%s/GB_DEC" % (current_path, job_root, num_ite), parts, gb_dec_command, log_file=log_file)
 
-            submit_jobs(ligs['id'], "%s/%s_%s/GB_DEC" % (current_path, job_root, num_ite), num_parts, ene_dec_command, log_file=log_file)
+            submit_jobs(ligs['id'], "%s/%s_%s/GB_DEC" % (current_path, job_root, num_ite), parts, ene_dec_command, log_file=log_file)
 
             # with ThreadPoolExecutor() as executor:
             #     results = executor.map(
